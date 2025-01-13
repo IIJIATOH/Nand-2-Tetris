@@ -1,7 +1,6 @@
 package main
 
 import (
-	"assembler/internal/mypackage"
 	"fmt"
 	"os"
 
@@ -21,7 +20,7 @@ var translateCmd = &cobra.Command{
 	Short: "Translate assembly program into Hack binary code",
 	Run: func(cmd *cobra.Command, args []string) {
 		fmt.Printf("Working, like i think. Word is :%s", pathToFile)
-		mypackage.Translate(pathToFile)
+		Translate(pathToFile)
 	},
 }
 
