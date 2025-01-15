@@ -1,4 +1,4 @@
-package main
+package vmModule
 
 import (
 	"fmt"

@@ -1,14 +1,44 @@
-package main
+package vmModule
 
 import (
 	"bufio"
 	"fmt"
 	"log"
 	"os"
+	"strings"
 )
-type Operation func() void
 
 func Translate(path string) {
+	type Operation func()
+	// set RAM[0] 256,   // stack pointer
+	// set RAM[1] 300,   // base address of the local segment
+	// set RAM[2] 400,   // base address of the argument segment
+	// set RAM[3] 3000,  // base address of the this segment
+	// set RAM[4] 3010,  // base address of the that segment
+	// var Addresses = `
+	// @256
+	// D=A
+	// @SP
+	// M=D
+	// @300
+	// M=D
+	// @LCL
+	// D=A
+	// @300
+	// M=D
+	// @ARG
+	// D=A
+	// @400
+	// M=D
+	// @THIS
+	// D=A
+	// @3000
+	// M=D
+	// @THAT
+	// D=A
+	// @3010
+	// M=D
+	// `
 	file, err := os.Open(path)
 	if err != nil {
 		log.Fatalf("failed to open file: %s", err)
@@ -25,34 +55,53 @@ func Translate(path string) {
 
 	// Создаем сканер
 	scanner := bufio.NewScanner(file)
-	writer := bufio.NewWriter(outputFile)
-	func test () {
-		fmt.Println("ТЕСТ")
-	}
+	// writer := bufio.NewWriter(outputFile)
 
 	// • add, sub , neg
-// • eq , gt , lt
-// • and, or , not
+	// • eq , gt , lt
+	// • and, or , not
 	logicalMap := map[string]Operation{
-		"add": test,
-		"sub": test,
-		"neg": test,
-		"eq": test,
-		"gt": test,
-		"lt": test,
-		"and": test,
-		"or": test,
-		"not": not
+		"add":  test,
+		"sub":  test,
+		"neg":  test,
+		"eq":   test,
+		"gt":   test,
+		"lt":   test,
+		"and":  test,
+		"or":   test,
+		"not":  test,
+		"push": test,
+		"pop":  test,
 	}
 
-	for scannerFirst.Scan() {
-		line := scannerFirst.Text()
+	for scanner.Scan() {
+		line := scanner.Text()
 		trimLine := strings.TrimSpace(line)
 		if strings.HasPrefix(trimLine, "//") || trimLine == "" {
 			continue
 		}
-		if fn, exists := logicalMap[line]; exists {
-			
+		if _, exists := logicalMap[line]; exists {
+			// fmt.Println(fn(line))
+		} else {
+			fmt.Println(line)
 		}
 	}
+}
+
+func push(line string) {
+	splittedLine := strings.Split()
+	segmentLine := splittedLine[0]
+	number := splittedLine[1]
+	segmentMap := map[string]string{
+		"constant": "@SP",
+		"local":    "@LCL",
+		"argument": "@ARG",
+		"this":     "@THIS",
+		"that":     "@THAT",
+	}
+	result := fmt.Sprintf("@%d\nD=A\n%s\nM=D\n%s++", number, segmentMap[segmentLine], segmentMap[segmentLine])
+	fmt.Println(result)
+}
+func test() {
+	fmt.Println("ТЕСТ")
 }
