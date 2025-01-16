@@ -1,4 +1,4 @@
-package vmModule
+package main
 
 import (
 	"bufio"
@@ -9,7 +9,7 @@ import (
 )
 
 func Translate(path string) {
-	type Operation func()
+	type Operation func(string)
 	// set RAM[0] 256,   // stack pointer
 	// set RAM[1] 300,   // base address of the local segment
 	// set RAM[2] 400,   // base address of the argument segment
@@ -46,7 +46,7 @@ func Translate(path string) {
 	defer file.Close()
 
 	// Создаем новый файл для записи
-	outputFile, err := os.Create("output.hack")
+	outputFile, err := os.Create("output.asm")
 	if err != nil {
 		fmt.Println("Ошибка при создании файла:", err)
 		return
@@ -55,23 +55,28 @@ func Translate(path string) {
 
 	// Создаем сканер
 	scanner := bufio.NewScanner(file)
+	writer := bufio.NewWriter(outputFile)
 	// writer := bufio.NewWriter(outputFile)
 
 	// • add, sub , neg
 	// • eq , gt , lt
 	// • and, or , not
-	logicalMap := map[string]Operation{
-		"add":  test,
-		"sub":  test,
-		"neg":  test,
-		"eq":   test,
-		"gt":   test,
-		"lt":   test,
-		"and":  test,
-		"or":   test,
-		"not":  test,
-		"push": test,
-		"pop":  test,
+	logicalMap := map[string]string{
+		"add":  "@SP\nD=M\nSP--\nM=M+D",
+		"sub":  "test",
+		"neg":  "test",
+		"eq":   "test",
+		"gt":   "test",
+		"lt":   "test",
+		"and":  "test",
+		"or":   "test",
+		"not":  "test",
+		"push": "test",
+		"pop":  "test",
+	}
+	stackMap := map[string]func(string, string) string{
+		"push": push,
+		"pop":  push,
 	}
 
 	for scanner.Scan() {
@@ -80,18 +85,26 @@ func Translate(path string) {
 		if strings.HasPrefix(trimLine, "//") || trimLine == "" {
 			continue
 		}
-		if _, exists := logicalMap[line]; exists {
-			// fmt.Println(fn(line))
+		if processedLine, exists := logicalMap[line]; exists {
+			_, err := writer.WriteString(processedLine + "\n")
+			fmt.Println(err)
 		} else {
-			fmt.Println(line)
+			splittedLine := strings.Split(line, " ")
+			if fn, exists := stackMap[splittedLine[0]]; exists {
+				processedLine := fn(splittedLine[1], splittedLine[2])
+				_, err := writer.WriteString(processedLine + "\n")
+				fmt.Println(err)
+			}
+
+			fmt.Println(splittedLine[1])
 		}
+	}
+	if err := writer.Flush(); err != nil {
+		log.Fatalf("failed to flush writer: %s", err)
 	}
 }
 
-func push(line string) {
-	splittedLine := strings.Split()
-	segmentLine := splittedLine[0]
-	number := splittedLine[1]
+func push(segmentLine string, number string) string {
 	segmentMap := map[string]string{
 		"constant": "@SP",
 		"local":    "@LCL",
@@ -99,9 +112,7 @@ func push(line string) {
 		"this":     "@THIS",
 		"that":     "@THAT",
 	}
-	result := fmt.Sprintf("@%d\nD=A\n%s\nM=D\n%s++", number, segmentMap[segmentLine], segmentMap[segmentLine])
+	result := fmt.Sprintf("@%s\nD=A\n%s\nM=D\n%s++", number, segmentMap[segmentLine], segmentMap[segmentLine])
 	fmt.Println(result)
-}
-func test() {
-	fmt.Println("ТЕСТ")
+	return result
 }

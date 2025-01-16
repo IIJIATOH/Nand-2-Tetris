@@ -1,4 +1,4 @@
-package vmModule
+package main
 
 import (
 	"fmt"
@@ -26,7 +26,7 @@ var translateCmd = &cobra.Command{
 
 func main() {
 	// Определение флагов
-	translateCmd.Flags().StringVarP(&pathToFile, "path", "p", "C:/Users/mikhailovpa.DESKTOP-OKO95JV/Downloads/nand/nand2tetris/projects/6/max/Max.asm", "A path to file to translate")
+	translateCmd.Flags().StringVarP(&pathToFile, "path", "p", "C:/Users/mikhailovpa.DESKTOP-OKO95JV/Downloads/nand/nand2tetris/projects/7/StackArithmetic/SimpleAdd/SimpleAdd.vm", "A path to file to translate")
 
 	// Добавление подкоманды к корневой команде
 	rootCmd.AddCommand(translateCmd)
