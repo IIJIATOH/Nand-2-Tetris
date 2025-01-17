@@ -62,7 +62,7 @@ func Translate(path string) {
 	// • eq , gt , lt
 	// • and, or , not
 	logicalMap := map[string]string{
-		"add":  "@SP\nD=M\nSP--\nM=M+D",
+		"add":  "@SP\nA=M\nD=M\n@SP\nM=M-1\nM=M+D",
 		"sub":  "test",
 		"neg":  "test",
 		"eq":   "test",
@@ -112,7 +112,7 @@ func push(segmentLine string, number string) string {
 		"this":     "@THIS",
 		"that":     "@THAT",
 	}
-	result := fmt.Sprintf("@%s\nD=A\n%s\nM=D\n%s++", number, segmentMap[segmentLine], segmentMap[segmentLine])
+	result := fmt.Sprintf("%s\nA=M\nD=M\n@%s\nM=A\n%s\nM=M+1", segmentMap[segmentLine], number, segmentMap[segmentLine])
 	fmt.Println(result)
 	return result
 }
