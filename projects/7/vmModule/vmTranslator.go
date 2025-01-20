@@ -112,7 +112,7 @@ func push(segmentLine string, number string) string {
 		"this":     "@THIS",
 		"that":     "@THAT",
 	}
-	result := fmt.Sprintf("%s\nA=M\nD=M\n@%s\nM=A\n%s\nM=M+1", segmentMap[segmentLine], number, segmentMap[segmentLine])
+	result := fmt.Sprintf("%s\nM=M+1\n@%s\nD=A\n%s\nA=M\nM=D", segmentMap[segmentLine], number, segmentMap[segmentLine])
 	fmt.Println(result)
 	return result
 }
