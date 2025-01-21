@@ -56,23 +56,22 @@ func Translate(path string) {
 	// Создаем сканер
 	scanner := bufio.NewScanner(file)
 	writer := bufio.NewWriter(outputFile)
-	// writer := bufio.NewWriter(outputFile)
+	setMemoryOnSPValue := "@SP\nM=M-1\nA=M\n"
+	addSP := "@SP\nM=M+1\n"
 
 	// • add, sub , neg
 	// • eq , gt , lt
 	// • and, or , not
 	logicalMap := map[string]string{
-		"add":  "@SP\nA=M\nD=M\n@SP\nM=M-1\nM=M+D",
-		"sub":  "test",
-		"neg":  "test",
-		"eq":   "test",
-		"gt":   "test",
-		"lt":   "test",
-		"and":  "test",
-		"or":   "test",
-		"not":  "test",
-		"push": "test",
-		"pop":  "test",
+		"add": setMemoryOnSPValue + "D=M\n" + setMemoryOnSPValue + "M=M+D\n" + addSP,
+		"sub": setMemoryOnSPValue + "D=M\n" + setMemoryOnSPValue + "M=M-D\n" + addSP,
+		"neg": setMemoryOnSPValue + "M=-M\n" + addSP,
+		"eq":  "@SP\nM=M-1\nA=M\nD=M\n@SP\nM=M-1\nA=M\nD=M-D\n@END\nD;JEQ\n@SP\nA=M\nM=-1\n@END2\n0;JMP\n(END)\n@SP\nA=M\nM=1\n(END2)\n@SP\nM=M+1",
+		"gt":  "test",
+		"lt":  "test",
+		"and": "test",
+		"or":  "test",
+		"not": "test",
 	}
 	stackMap := map[string]func(string, string) string{
 		"push": push,
@@ -112,7 +111,7 @@ func push(segmentLine string, number string) string {
 		"this":     "@THIS",
 		"that":     "@THAT",
 	}
-	result := fmt.Sprintf("%s\nM=M+1\n@%s\nD=A\n%s\nA=M\nM=D", segmentMap[segmentLine], number, segmentMap[segmentLine])
+	result := fmt.Sprintf("@%s\nD=A\n%s\nA=M\nM=D\n%s\nM=M+1", number, segmentMap[segmentLine], segmentMap[segmentLine])
 	fmt.Println(result)
 	return result
 }
