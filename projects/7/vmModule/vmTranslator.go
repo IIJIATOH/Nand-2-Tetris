@@ -5,45 +5,41 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"slices"
+	"strconv"
 	"strings"
 )
 
+// M - память
+// A - регистр. Принимает значение @номер, Также является указателем ячейки памяти
+// D - регистр. Дополнительно хранит значения.
+
+var segmentMap = map[string]string{
+	"constant": "@SP",
+	"local":    "@LCL",
+	"argument": "@ARG",
+	"this":     "@THIS",
+	"that":     "@THAT",
+}
+var pointerSegmentMap = map[string]int{
+	"local":    300,
+	"argument": 400,
+	"this":     3000,
+	"that":     3010,
+}
+var setMemoryOnSPValue = "@SP\nM=M-1\nA=M\n"
+var addSP = "@SP\nM=M+1\n"
+
+var counter int64 = 0
+
 func Translate(path string) {
-	type Operation func(string)
-	// set RAM[0] 256,   // stack pointer
-	// set RAM[1] 300,   // base address of the local segment
-	// set RAM[2] 400,   // base address of the argument segment
-	// set RAM[3] 3000,  // base address of the this segment
-	// set RAM[4] 3010,  // base address of the that segment
-	// var Addresses = `
-	// @256
-	// D=A
-	// @SP
-	// M=D
-	// @300
-	// M=D
-	// @LCL
-	// D=A
-	// @300
-	// M=D
-	// @ARG
-	// D=A
-	// @400
-	// M=D
-	// @THIS
-	// D=A
-	// @3000
-	// M=D
-	// @THAT
-	// D=A
-	// @3010
-	// M=D
-	// `
+
 	file, err := os.Open(path)
 	if err != nil {
 		log.Fatalf("failed to open file: %s", err)
 	}
 	defer file.Close()
+	checkCounter := &counter
 
 	// Создаем новый файл для записи
 	outputFile, err := os.Create("output.asm")
@@ -56,26 +52,21 @@ func Translate(path string) {
 	// Создаем сканер
 	scanner := bufio.NewScanner(file)
 	writer := bufio.NewWriter(outputFile)
-	setMemoryOnSPValue := "@SP\nM=M-1\nA=M\n"
-	addSP := "@SP\nM=M+1\n"
 
-	// • add, sub , neg
-	// • eq , gt , lt
-	// • and, or , not
 	logicalMap := map[string]string{
 		"add": setMemoryOnSPValue + "D=M\n" + setMemoryOnSPValue + "M=M+D\n" + addSP,
 		"sub": setMemoryOnSPValue + "D=M\n" + setMemoryOnSPValue + "M=M-D\n" + addSP,
 		"neg": setMemoryOnSPValue + "M=-M\n" + addSP,
-		"eq":  "@SP\nM=M-1\nA=M\nD=M\n@SP\nM=M-1\nA=M\nD=M-D\n@END\nD;JEQ\n@SP\nA=M\nM=-1\n@END2\n0;JMP\n(END)\n@SP\nA=M\nM=1\n(END2)\n@SP\nM=M+1",
-		"gt":  "test",
-		"lt":  "test",
-		"and": "test",
-		"or":  "test",
-		"not": "test",
+		"eq":  "JEQ",
+		"gt":  "JGT",
+		"lt":  "JLT",
+		"and": setMemoryOnSPValue + "D=M\n" + setMemoryOnSPValue + "M=D&M\n" + addSP,
+		"or":  setMemoryOnSPValue + "D=M\n" + setMemoryOnSPValue + "M=D|M\n" + addSP,
+		"not": setMemoryOnSPValue + "M=!M\n" + addSP,
 	}
 	stackMap := map[string]func(string, string) string{
 		"push": push,
-		"pop":  push,
+		"pop":  pop,
 	}
 
 	for scanner.Scan() {
@@ -85,12 +76,19 @@ func Translate(path string) {
 			continue
 		}
 		if processedLine, exists := logicalMap[line]; exists {
-			_, err := writer.WriteString(processedLine + "\n")
-			fmt.Println(err)
+			comparisons := []string{"eq", "gt", "lt"}
+			if slices.Contains(comparisons, line) {
+				_, err := writer.WriteString(comparisson(logicalMap[line]) + "\n")
+				fmt.Println(err)
+			} else {
+				_, err := writer.WriteString(processedLine + "\n")
+				fmt.Println(err)
+			}
 		} else {
 			splittedLine := strings.Split(line, " ")
 			if fn, exists := stackMap[splittedLine[0]]; exists {
 				processedLine := fn(splittedLine[1], splittedLine[2])
+				fmt.Println(checkCounter)
 				_, err := writer.WriteString(processedLine + "\n")
 				fmt.Println(err)
 			}
@@ -104,14 +102,19 @@ func Translate(path string) {
 }
 
 func push(segmentLine string, number string) string {
-	segmentMap := map[string]string{
-		"constant": "@SP",
-		"local":    "@LCL",
-		"argument": "@ARG",
-		"this":     "@THIS",
-		"that":     "@THAT",
-	}
 	result := fmt.Sprintf("@%s\nD=A\n%s\nA=M\nM=D\n%s\nM=M+1", number, segmentMap[segmentLine], segmentMap[segmentLine])
 	fmt.Println(result)
 	return result
+}
+
+func pop(segmentLine string, number string) string {
+	convertedNumber, _ := strconv.Atoi(number)
+	result := "@SP\nM=M-1\nA=M\nD=M\n@" + strconv.Itoa(pointerSegmentMap[segmentLine]+convertedNumber) + "\nM=D\n"
+	fmt.Println(result)
+	return result
+}
+func comparisson(JMPKey string) string {
+	counter += 2
+	jmp := fmt.Sprintf("D=M-D\n@END%d\nD;%s\n@SP\nA=M\nM=-1\n@END%d\n0;JMP\n(END%d)\n@SP\nA=M\nM=1\n(END%d)\n", counter, JMPKey, counter+1, counter, counter+1)
+	return setMemoryOnSPValue + "D=M\n" + setMemoryOnSPValue + jmp + addSP
 }
