@@ -1,0 +1,1 @@
+- Команда для запуска из папки vmModule go run ./... translate

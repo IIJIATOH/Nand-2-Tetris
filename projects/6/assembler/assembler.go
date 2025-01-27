@@ -11,7 +11,6 @@ import (
 )
 
 func Translate(path string) {
-	// Открываем файл
 	file, err := os.Open(path)
 	if err != nil {
 		log.Fatalf("failed to open file: %s", err)
@@ -136,7 +135,7 @@ func Translate(path string) {
 			countLines++
 		}
 	}
-	// Читаем файл построчно
+	// Читаем файл построчно второй раз
 	for scannerSecond.Scan() {
 		line := scannerSecond.Text()
 		trimLine := strings.TrimSpace(line)
