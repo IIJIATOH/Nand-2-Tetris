@@ -22,6 +22,7 @@ var segmentMap = map[string]string{
 	"that":     "@THAT",
 }
 var pointerSegmentMap = map[string]int{
+	"temp":     5,
 	"local":    300,
 	"argument": 400,
 	"this":     3000,
@@ -101,9 +102,26 @@ func Translate(path string) {
 	}
 }
 
-func push(segmentLine string, number string) string {
-	result := fmt.Sprintf("@%s\nD=A\n%s\nA=M\nM=D\n%s\nM=M+1", number, segmentMap[segmentLine], segmentMap[segmentLine])
-	fmt.Println(result)
+func push(segmentLine, number string) string {
+	var result string
+	strNumber, _ := strconv.Atoi(number)
+
+	if segmentLine == "constant" {
+		result = fmt.Sprintf(
+			"@%s\nD=A\n%s\nA=M\nM=D\n%s\nM=M+1",
+			number,
+			segmentMap[segmentLine],
+			segmentMap[segmentLine],
+		)
+	} else {
+		lineNumber := pointerSegmentMap[segmentLine] + strNumber
+		result = fmt.Sprintf(
+			"@%d\nD=A\n@%d\nM=D\n",
+			strNumber,
+			lineNumber,
+		)
+	}
+
 	return result
 }
 
