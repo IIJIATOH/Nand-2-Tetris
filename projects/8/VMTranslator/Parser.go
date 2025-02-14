@@ -26,6 +26,7 @@ const (
 	C_FUNCTION
 	C_RETURN
 	C_CALL
+	C_UNKNOWN
 )
 
 func NewParser(file io.Reader) *Parser {
@@ -45,17 +46,24 @@ func (p *Parser) advance() {
 
 func (p *Parser) commandType() Commands {
 	arithmeticsCommands := []string{"add", "sub", "neg", "and", "eq", "gt", "lt", "or", "not"}
-	var result Commands
-	if slices.Contains(arithmeticsCommands, p.currentCommand) {
-		result = C_ARITHMETIC
+	switch {
+	case slices.Contains(arithmeticsCommands, p.currentCommand):
+		return C_ARITHMETIC
+	case strings.Contains(p.currentCommand, "push"):
+		return C_PUSH
+	case strings.Contains(p.currentCommand, "pop"):
+		return C_POP
+	case strings.Contains(p.currentCommand, "label"):
+		return C_LABEL
+	case strings.HasPrefix(p.currentCommand, "goto"):
+		return C_GOTO
+	case strings.Contains(p.currentCommand, "if"):
+		return C_IF
+	case strings.Contains(p.currentCommand, "call"):
+		return C_CALL
+	default:
+		return C_UNKNOWN
 	}
-	if strings.Contains(p.currentCommand, "push") {
-		result = C_PUSH
-	}
-	if strings.Contains(p.currentCommand, "pop") {
-		result = C_POP
-	}
-	return result
 }
 
 func (p *Parser) arg1() (string, error) {
