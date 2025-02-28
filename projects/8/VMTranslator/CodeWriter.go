@@ -28,8 +28,9 @@ var pointerSegmentMap = map[string]int{
 }
 
 type CodeWriter struct {
-	Writer  *bufio.Writer
-	counter int
+	Writer    *bufio.Writer
+	counter   int
+	LineCount int
 }
 
 func NewWriter(file io.Writer) *CodeWriter {
@@ -58,10 +59,10 @@ func (cw *CodeWriter) writeArithmetic(command string) {
 	processedLine, _ := logicalMap[command]
 	comparisons := []string{"eq", "gt", "lt"}
 	if slices.Contains(comparisons, command) {
-		_, err := cw.Writer.WriteString(cw.comparisson(logicalMap[command]) + "\n")
+		err := cw.WriteString(cw.comparisson(logicalMap[command]) + "\n")
 		fmt.Println(err)
 	} else {
-		_, err := cw.Writer.WriteString(processedLine + "\n")
+		err := cw.WriteString(processedLine + "\n")
 		fmt.Println(err)
 	}
 
@@ -70,22 +71,22 @@ func (cw *CodeWriter) writeArithmetic(command string) {
 func (cw *CodeWriter) writePushPop(command Commands, segment string, index int) {
 	splittedLine := strings.Split(segment, " ")
 	if command == C_PUSH {
-		cw.Writer.WriteString(cw.push(splittedLine[1], splittedLine[2]))
+		cw.WriteString(cw.push(splittedLine[1], splittedLine[2]))
 	} else {
-		cw.Writer.WriteString(cw.pop(splittedLine[1], splittedLine[2]))
+		cw.WriteString(cw.pop(splittedLine[1], splittedLine[2]))
 	}
 }
 
 func (cw *CodeWriter) writeLabel(label string) {
-	cw.Writer.WriteString(fmt.Sprintf("(%s)", label))
+	cw.WriteString(fmt.Sprintf("(%s)\n", label))
 }
 
 func (cw *CodeWriter) writeGoto(label string) {
-	cw.Writer.WriteString(fmt.Sprintf("@%s\n0;JMP", label))
+	cw.WriteString(fmt.Sprintf("@%s\n0;JMP\n", label))
 }
 
 func (cw *CodeWriter) writeIf(label string) {
-	cw.Writer.WriteString(fmt.Sprintf("@SP\nA=M\nD=M\n@%s\nD;JGE", label))
+	cw.WriteString(fmt.Sprintf("@SP\nA=M\nD=M\n@%s\nD;JGE\n", label))
 }
 
 func (cw *CodeWriter) push(segmentLine, number string) string {
@@ -111,13 +112,23 @@ func (cw *CodeWriter) push(segmentLine, number string) string {
 }
 
 func (cw *CodeWriter) writeCall(functionName string, nArgs string) {
-	numberArgs, _ := strconv.Atoi(nArgs)
-	// Перекидываем аргументы
-	for i := 0; i < numberArgs; i++ {
-		cw.push("argument", strconv.Itoa(i))
+	// numberArgs, _ := strconv.Atoi(nArgs)
+	var getRearrangeArgumetCode = func(arg string) string {
+		return "@" + arg + "\nD=M\n" + "@SP\nA=M\n" + "M=D\n@SP\nM=M+1\n"
 	}
+	var getRearrangeArgumetsCode = func() string {
+		result := "@SP\nM=M+1\n" // TODO Надо понять что он добавляет вначале и зачем это надо
+		result += getRearrangeArgumetCode("LCL")
+		result += getRearrangeArgumetCode("ARG")
+		result += getRearrangeArgumetCode("THIS")
+		result += getRearrangeArgumetCode("THAT")
+		return result
+	}
+	rearrangeArguments := getRearrangeArgumetsCode()
+
+	cw.WriteString(rearrangeArguments)
 	// Делаем прыжок на функцию
-	cw.Writer.WriteString(fmt.Sprintf("@%s\n0;JMP", functionName))
+	cw.WriteString(fmt.Sprintf("@%s\n0;JMP\n", functionName))
 }
 
 func (cw *CodeWriter) pop(segmentLine string, number string) string {
@@ -131,4 +142,25 @@ func (cw *CodeWriter) close() {
 	if err := cw.Writer.Flush(); err != nil {
 		log.Fatalf("failed to flush writer: %s", err)
 	}
+}
+
+func (cw *CodeWriter) WriteString(s string) error {
+	_, err := cw.Writer.WriteString(s)
+	if err != nil {
+		return err
+	}
+	lines := strings.Count(s, "\n")
+	cw.LineCount += lines
+
+	return nil
+}
+
+func (cw *CodeWriter) WriteFunction(functionName string, nVars string) {
+	// Нужно ли Пулить аргументы?
+	cw.writeLabel(functionName)
+	// Устновить ARG LCL
+	setLCLLikeSP := "@SP\nD=M\n@LCL\nM=D\n"
+	cw.WriteString(setLCLLikeSP)
+	setArgLikePrevSP := "@SP\nD=M\n@6\nD=D-A\n@ARG\nM=D\n"
+	cw.WriteString(setArgLikePrevSP)
 }

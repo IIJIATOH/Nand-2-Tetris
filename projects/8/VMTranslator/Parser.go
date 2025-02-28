@@ -40,27 +40,34 @@ func (p Parser) hasMoreLines() bool {
 }
 
 func (p *Parser) advance() {
-	p.currentCommand = p.Scanner.Text()
+	line := p.Scanner.Text()
+	lineWithoutComments := strings.Split(line, "//")[0]
+	p.currentCommand = lineWithoutComments
 	p.currentCommandType = p.commandType()
 }
 
 func (p *Parser) commandType() Commands {
 	arithmeticsCommands := []string{"add", "sub", "neg", "and", "eq", "gt", "lt", "or", "not"}
+	lineWithoutComments := strings.Split(p.currentCommand, "//")[0]
 	switch {
-	case slices.Contains(arithmeticsCommands, p.currentCommand):
+	case slices.Contains(arithmeticsCommands, lineWithoutComments):
 		return C_ARITHMETIC
-	case strings.Contains(p.currentCommand, "push"):
+	case strings.Contains(lineWithoutComments, "push"):
 		return C_PUSH
-	case strings.Contains(p.currentCommand, "pop"):
+	case strings.Contains(lineWithoutComments, "pop"):
 		return C_POP
-	case strings.Contains(p.currentCommand, "label"):
+	case strings.Contains(lineWithoutComments, "label"):
 		return C_LABEL
-	case strings.HasPrefix(p.currentCommand, "goto"):
+	case strings.HasPrefix(lineWithoutComments, "goto"):
 		return C_GOTO
-	case strings.Contains(p.currentCommand, "if"):
+	case strings.Contains(lineWithoutComments, "if"):
 		return C_IF
-	case strings.Contains(p.currentCommand, "call"):
+	case strings.Contains(lineWithoutComments, "call"):
 		return C_CALL
+	case strings.Contains(lineWithoutComments, "function"):
+		return C_FUNCTION
+	case strings.Contains(lineWithoutComments, "return"):
+		return C_RETURN
 	default:
 		return C_UNKNOWN
 	}

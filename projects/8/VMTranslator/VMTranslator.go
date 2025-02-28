@@ -30,6 +30,7 @@ func Translate(path string) {
 		if strings.HasPrefix(trimLine, "//") || trimLine == "" {
 			continue
 		}
+		// Убираем комментарий если в строке присутсвуют
 		lineSlices := strings.Split(trimLine, " ")
 		switch parser.currentCommandType {
 		case C_ARITHMETIC:
@@ -45,7 +46,9 @@ func Translate(path string) {
 		case C_IF:
 			writer.writeIf(lineSlices[1])
 		case C_CALL:
-			writer.writeCall(lineSlices[0], lineSlices[1])
+			writer.writeCall(lineSlices[1], lineSlices[2])
+		case C_FUNCTION:
+			writer.WriteFunction(lineSlices[1], lineSlices[2])
 
 		default:
 			continue
